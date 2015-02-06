@@ -212,25 +212,24 @@ function score( event )
   end
   text.text = data.score
   if score == 1 then
-      unlockAchievement('CgkIh--L0K0bEAIQBA')
+      unlockAchievement("CgkIh--L0K0bEAIQBA")
     end
     if score == 5 then
-      unlockAchievement('CgkIh--L0K0bEAIQAQ')
+      unlockAchievement("CgkIh--L0K0bEAIQAQ")
     end
     if score == 20 then
-      unlockAchievement('CgkIh--L0K0bEAIQAA')
+      unlockAchievement("CgkIh--L0K0bEAIQAA")
     end
     if score == 10 then
-      unlockAchievement('CgkIh--L0K0bEAIQAw')
+      unlockAchievement("CgkIh--L0K0bEAIQAw")
     end
     if score == 50 then
-      unlockAchievement('CgkIh--L0K0bEAIQBQ')
+      unlockAchievement("CgkIh--L0K0bEAIQBQ")
     end
 end
 function showLeaderboards2()
    if ( system.getInfo("platformName") == "Android" ) then
       gameNetwork.show( "leaderboards" )
-      gameNetwork.show( "achievements" )
    else
       gameNetwork.show( "leaderboards", { leaderboard = {timeScope="AllTime"} } )
    end
@@ -238,15 +237,11 @@ function showLeaderboards2()
 end
 
 function submitHighScore()
-  gameNetwork.request("setHighScore",
-    {
-      localPlayerScore = 
-      { 
-        category='CgkIh--L0K0bEAIQBg', 
-        value=tonumber(highScore)
-      }
-    }
-  )
+  gameNetwork.request( "setHighScore",
+{
+   localPlayerScore = { category="CgkIh--L0K0bEAIQBg", value= highscore },
+   listener = postScoreSubmit
+} )
 end
 function unlockAchievement (achievementID)
   gameNetwork.request( "unlockAchievement",
