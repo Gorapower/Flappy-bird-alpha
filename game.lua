@@ -6,6 +6,50 @@ physics.start()
 data = require("data")
 highscore = 0
 
+
+--google play service
+local gameNetwork = require( "gameNetwork" )
+local playerName
+
+local function loadLocalPlayerCallback( event )
+   playerName = event.data.alias
+  -- saveSettings()  --save player data locally using your own "saveSettings()" function
+end
+
+local function gameNetworkLoginCallback( event )
+   gameNetwork.request( "loadLocalPlayer", { listener=loadLocalPlayerCallback } )
+   return true
+end
+
+local function gpgsInitCallback( event )
+   gameNetwork.request( "login", { userInitiated=true, listener=gameNetworkLoginCallback } )
+end
+
+local function gameNetworkSetup()
+   if ( system.getInfo("platformName") == "Android" ) then
+      gameNetwork.init( "google", gpgsInitCallback )
+   else
+      gameNetwork.init( "gamecenter", gameNetworkLoginCallback )
+   end
+end
+
+------HANDLE SYSTEM EVENTS------
+local function systemEvents( event )
+   print("systemEvent " .. event.type)
+   if ( event.type == "applicationSuspend" ) then
+      print( "suspending..........................." )
+   elseif ( event.type == "applicationResume" ) then
+      print( "resuming............................." )
+   elseif ( event.type == "applicationExit" ) then
+      print( "exiting.............................." )
+   elseif ( event.type == "applicationStart" ) then
+      gameNetworkSetup()  --login to the network here
+   end
+   return true
+end
+
+Runtime:addEventListener( "system", systemEvents )
+
 -- functions
 function scrollground(event)
     local xOffset = -5
@@ -90,6 +134,7 @@ function onCollision( event )
       if data.score > highscore then
         highscore = data.score
         save()
+        submitHighScore()
       end
       timer.performWithDelay( 500, mover )
       Runtime:removeEventListener("enterFrame", scrollground)
@@ -103,6 +148,7 @@ function mover()
       text2.isVisible = true
       text2.text = highscore
       playb.isVisible = true
+      leaderb.isVisible = true
     end
 function game2(event)
      if event.phase == "ended" then
@@ -121,7 +167,6 @@ function game2(event)
      getready.x = x; getready.y = y
      scoreboard.x = x; scoreboard.y = y*3
      gameover.x = x; gameover.y = 100
-     playb.x = x; playb.y = y+130
      text.x = x
      text.y = 50
      text.isVisible = false
@@ -141,6 +186,7 @@ function game2(event)
      getready.isVisible = true
      text2.isVisible = false
      timer.performWithDelay( 50, fly2 )
+     leaderb.isVisible = false
      end
 end
 
@@ -165,6 +211,53 @@ function score( event )
     audio.play( sfxPoint )
   end
   text.text = data.score
+  if score == 1 then
+      unlockAchievement('CgkIh--L0K0bEAIQBA')
+    end
+    if score == 5 then
+      unlockAchievement('CgkIh--L0K0bEAIQAQ')
+    end
+    if score == 20 then
+      unlockAchievement('CgkIh--L0K0bEAIQAA')
+    end
+    if score == 10 then
+      unlockAchievement('CgkIh--L0K0bEAIQAw')
+    end
+    if score == 50 then
+      unlockAchievement('CgkIh--L0K0bEAIQBQ')
+    end
+end
+function showLeaderboards2()
+   if ( system.getInfo("platformName") == "Android" ) then
+      gameNetwork.show( "leaderboards" )
+      gameNetwork.show( "achievements" )
+   else
+      gameNetwork.show( "leaderboards", { leaderboard = {timeScope="AllTime"} } )
+   end
+   return true
+end
+
+function submitHighScore()
+  gameNetwork.request("setHighScore",
+    {
+      localPlayerScore = 
+      { 
+        category='CgkIh--L0K0bEAIQBg', 
+        value=tonumber(highScore)
+      }
+    }
+  )
+end
+function unlockAchievement (achievementID)
+  gameNetwork.request( "unlockAchievement",
+    {
+      achievement = 
+        { 
+          identifier=achievementID, percentComplete=100, showsCompletionBanner=true 
+        },
+      listener = achievementRequestCallback
+    } 
+  )
 end
 
 --funtion to create scene game
@@ -240,12 +333,12 @@ function scene:createScene( event )
    scoreboard = display.newImageRect("assets/scoreboard.png" , display.viewableContentWidth/1.5, display.viewableContentHeight/2)
    scoreboard.x = x; scoreboard.y = y*3
    sceneGroup:insert(scoreboard)
-   gameover = display.newImageRect("assets/gameover.tiff" , display.viewableContentWidth/1.3, 120)
+   gameover = display.newImageRect("assets/gameover.png" , display.viewableContentWidth/1.3, 120)
    gameover.x = x; gameover.y = 100
    sceneGroup:insert(gameover)
    gameover.isVisible = false
    playb = display.newImageRect("assets/play.png" , display.viewableContentWidth/3, 75)
-   playb.x = x; playb.y = y+130
+   playb.x = x*0.5; playb.y = y+130
    playb.isVisible = false
    sceneGroup:insert(playb)
    text = display.newText(data.score,display.contentCenterX, 50, "04b_19", 20)
@@ -257,6 +350,10 @@ function scene:createScene( event )
    text2:setFillColor(255,255,255)
    sceneGroup:insert(text2)
    text2.isVisible = false
+   leaderb = display.newImageRect("assets/leaderboards.png" , display.viewableContentWidth/3, 75)
+   leaderb.x = x*1.5; leaderb.y = y+130
+   sceneGroup:insert(leaderb)
+   leaderb.isVisible = false
 
 
 end
@@ -271,6 +368,7 @@ end
 -- function call it after the scene game goes on screen
 function scene:enterScene( event )
    local sceneGroup = self.view
+    leaderb:addEventListener("touch", showLeaderboards2)
     playb:addEventListener("touch", game2)
     Runtime:addEventListener( "collision", onCollision )
    	Runtime:addEventListener("touch", fly)

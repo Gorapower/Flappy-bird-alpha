@@ -75,11 +75,20 @@ settings =
 	--
 	-- Android Section
 	--
-	android =
+	android = 
 	{
-		usesPermissions =
-		{
-			"android.permission.INTERNET",
-		},
+	  googlePlayGamesAppId = "939960498055"
+	},
+
+	plugins =
+	{
+    	["CoronaProvider.gameNetwork.google"] =
+    	{
+       		publisherId = "com.coronalabs",
+    	},
+	},
+	usesPermissions =
+	{
+		"android.permission.INTERNET",
 	},
 }
